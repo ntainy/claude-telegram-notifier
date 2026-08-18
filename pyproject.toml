@@ -10,8 +10,18 @@ dependencies = [
     "python-dotenv>=1.0",
 ]
 
+[project.optional-dependencies]
+# Only needed to expose the notifier to MCP clients (Claude Desktop, Cowork,
+# Claude Code). The send-only core stays dependency-light without it.
+# >=2.0: FastMCP was replaced by mcp.server.mcpserver.MCPServer, which is what
+# build_server() imports. A 1.x install fails at import, not at call time.
+mcp = [
+    "mcp>=2.0",
+]
+
 [project.scripts]
 tg-notify = "telegram_notifier.cli:main"
+tg-notify-mcp = "telegram_notifier.mcp_server:main"
 
 [dependency-groups]
 dev = [

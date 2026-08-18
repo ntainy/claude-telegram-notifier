@@ -206,6 +206,49 @@ uv run tg-notify "deploy finished" --thread-id 12   # #deploys
 uv run tg-notify "disk at 91%"     --thread-id 34   # #alerts
 ```
 
+### An agent sends the notification itself (MCP)
+
+The CLI only works where a shell can reach `api.telegram.org`. Agents often run
+in a sandbox with an allow-listed network, where it cannot — the send fails with
+a proxy `403`, not a Telegram error, and no amount of correctness in this
+package helps. MCP servers are spawned by the client on the host instead, so
+they get the host's Python and the host's network.
+
+```bash
+uv sync --extra mcp
+```
+
+Register it (Claude Code; Claude Desktop and Cowork take the same JSON):
+
+```bash
+claude mcp add telegram -- \
+  uv run --directory /path/to/claude-telegram-notifier --extra mcp tg-notify-mcp
+```
+
+```json
+{
+  "mcpServers": {
+    "telegram": {
+      "command": "uv",
+      "args": ["run", "--directory", "/path/to/claude-telegram-notifier",
+               "--extra", "mcp", "tg-notify-mcp"]
+    }
+  }
+}
+```
+
+Two tools: `send_telegram_notification(text, title, level, silent)` and
+`check_telegram_connection()`, which validates the token without sending
+anything. Markdown handling, splitting and retries are the same code the CLI
+uses.
+
+`--directory` matters. A stdio server is launched by the client, not by a
+shell, so its working directory is whatever the client picked — and `.env` is
+found by walking up from the CWD. The server also looks for `.env` beside its
+own package, and `TELEGRAM_ENV_FILE` overrides that, but passing `--directory`
+is the least surprising of the three. To keep secrets out of a file entirely,
+put them in the MCP config's `env` block; real environment variables still win.
+
 ---
 
 ## CLI reference
